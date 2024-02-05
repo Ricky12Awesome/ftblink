@@ -1,39 +1,79 @@
-import { Button, VerticalBox } from "std-widgets.slint";
+import { Button, VerticalBox, HorizontalBox, TextEdit, LineEdit, Spinner } from "std-widgets.slint";
+
+export global PathSelectorGlobal {
+    callback browse(string) -> string;
+    callback open(string);
+}
+
+export component PathSelector inherits HorizontalBox {
+    in-out property <string> display <=> text.text;
+    in-out property <string> path <=> edit.text;
+
+    callback accepted(string);
+
+    alignment: start;
+    spacing: 0.5rem;
+
+    text := Text {
+        vertical-alignment: center;
+    }
+
+    edit := LineEdit {
+        preferred-width: parent.width;
+
+        edited => {
+            parent.path = self.text;
+        }
+
+        accepted => {
+            parent.path = self.text;
+            parent.accepted(parent.path);
+        }
+    }
+
+    Button {
+        text: "Browse";
+
+        clicked => {
+            parent.path = PathSelectorGlobal.browse(parent.path);
+        }
+    }
+
+    Button {
+        text: "Open";
+
+        clicked => {
+            PathSelectorGlobal.open(parent.path);
+        }
+    }
+
+}
 
 export component AppWindow inherits Window {
-    in-out property <int> counter: 42;
-    in-out property <string> input: "";
-    callback input-accepted(string);
-    callback request-increase-value();
-
-    min-width: 24rem;
-    min-height: 12rem;
+    min-width: 48rem;
+    min-height: 24rem;
 
     VerticalBox {
         alignment: center;
-        spacing: 1.5rem;
-        padding-top: 3rem;
-        padding-bottom: 3rem;
-        padding-left: 6rem;
-        padding-right: 6rem;
+        spacing: 0.5rem;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+        padding-left: 2rem;
+        padding-right: 2rem;
 
-        Text {
-            text: "Counter: \{root.counter}";
-            horizontal-alignment: center;
+        PathSelector {
+            display: "Source";
         }
 
-        TextInput {
-            accepted => {
-                root.input = self.text;
-                root.input-accepted(self.text)
-            }
+        PathSelector {
+            display: "Destination";
         }
 
         Button {
             text: "Confirm";
             primary: true;
             clicked => {
-                root.input-accepted(root.input)
+
             }
         }
     }
