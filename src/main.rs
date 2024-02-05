@@ -1,12 +1,10 @@
 slint::include_modules!();
 
-mod path_selector;
-
 slint::slint! { import { AppWindow, PathSelector, PathSelectorGlobal } from "ui/appwindow.slint"; }
 
-fn main() -> Result<(), slint::PlatformError> {
-  let ui = AppWindow::new()?;
+mod cfg;
 
+fn setup_path_selectors(ui: &AppWindow) {
   let global = ui.global::<PathSelectorGlobal>();
 
   global.on_open(move |s| {
@@ -27,6 +25,38 @@ fn main() -> Result<(), slint::PlatformError> {
       .map(|s| s.to_string_lossy().to_string().into())
       .unwrap_or(s)
   });
+}
+
+fn main() -> Result<(), slint::PlatformError> {
+  let ui = AppWindow::new()?;
+
+  setup_path_selectors(&ui);
+
+  ui.on_load_packs(move |s| {
+    let ftb = cfg::FTBPath::new(&s);
+    let instances = ftb.load_instances();
+    let display = instances
+      .iter()
+      .map(|instance| instance.name.as_str().into())
+      .collect::<Vec<slint::SharedString>>();
+
+    display.as_slice().into()
+  });
+
+  if let Some(path) = cfg::PrismPath::default().path {
+    ui.set_prism_path(path.to_string_lossy().to_string().into());
+  }
+
+  if let Some(path) = cfg::FTBPath::default().path {
+    let path = path.to_string_lossy().to_string();
+
+    ui.set_ftb_path(path.clone().into());
+
+    let packs = ui.invoke_load_packs(path.into());
+
+    ui.set_packs(packs);
+  }
+
 
   ui.run()
 }

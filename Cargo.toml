@@ -10,6 +10,7 @@ build = "build.rs"
 [dependencies]
 slint = { version = "1.4", features = ["backend-qt"] }
 
+dirs = "5.0"
 confy = "0.6"
 symlink = "0.1"
 open = "5.0"

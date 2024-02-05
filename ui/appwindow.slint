@@ -1,4 +1,4 @@
-import { Button, VerticalBox, HorizontalBox, TextEdit, LineEdit, Spinner } from "std-widgets.slint";
+import { Button, VerticalBox, HorizontalBox, TextEdit, LineEdit, Spinner, ComboBox } from "std-widgets.slint";
 
 export global PathSelectorGlobal {
     callback browse(string) -> string;
@@ -10,6 +10,7 @@ export component PathSelector inherits HorizontalBox {
     in-out property <string> path <=> edit.text;
 
     callback accepted(string);
+    callback edited(string);
 
     alignment: start;
     spacing: 0.5rem;
@@ -23,6 +24,7 @@ export component PathSelector inherits HorizontalBox {
 
         edited => {
             parent.path = self.text;
+            parent.edited(parent.path);
         }
 
         accepted => {
@@ -50,30 +52,49 @@ export component PathSelector inherits HorizontalBox {
 }
 
 export component AppWindow inherits Window {
+    in-out property <[string]> packs <=> packs.model;
+    in-out property <string> selected <=> packs.current-value;
+    in-out property <bool> linked: false;
+
+    in-out property <string> prism-path <=> prism.path;
+    in-out property <string> ftb-path <=> ftb.path;
+
+    callback load-packs(string) -> [string];
+
     min-width: 48rem;
-    min-height: 24rem;
+    min-height: 12rem;
 
     VerticalBox {
         alignment: center;
         spacing: 0.5rem;
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-        padding-left: 2rem;
-        padding-right: 2rem;
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
 
-        PathSelector {
-            display: "Source";
+        prism := PathSelector {
+            display: "Prism/MultiMC";
         }
 
-        PathSelector {
-            display: "Destination";
+        ftb := PathSelector {
+            display: "FTB";
+
+            edited(s) => {
+                root.packs = load-packs(s);
+            }
         }
 
-        Button {
-            text: "Confirm";
-            primary: true;
-            clicked => {
+        HorizontalBox {
+            packs := ComboBox {
 
+            }
+
+            Button {
+                text: linked ? "Unlink" : "Link";
+                primary: true;
+                clicked => {
+
+                }
             }
         }
     }
