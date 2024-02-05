@@ -1,17 +1,39 @@
 import { Button, VerticalBox } from "std-widgets.slint";
 
 export component AppWindow inherits Window {
-    in-out property<int> counter: 42;
-
+    in-out property <int> counter: 42;
+    in-out property <string> input: "";
+    callback input-accepted(string);
     callback request-increase-value();
+
+    min-width: 24rem;
+    min-height: 12rem;
+
     VerticalBox {
+        alignment: center;
+        spacing: 1.5rem;
+        padding-top: 3rem;
+        padding-bottom: 3rem;
+        padding-left: 6rem;
+        padding-right: 6rem;
+
         Text {
             text: "Counter: \{root.counter}";
+            horizontal-alignment: center;
         }
+
+        TextInput {
+            accepted => {
+                root.input = self.text;
+                root.input-accepted(self.text)
+            }
+        }
+
         Button {
-            text: "Increase value";
+            text: "Confirm";
+            primary: true;
             clicked => {
-                root.request-increase-value();
+                root.input-accepted(root.input)
             }
         }
     }
