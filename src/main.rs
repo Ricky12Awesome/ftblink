@@ -43,8 +43,8 @@ fn main() -> Result<(), slint::PlatformError> {
     display.as_slice().into()
   });
 
-  if let Some(path) = cfg::PrismPath::default().path {
-    ui.set_prism_path(path.to_string_lossy().to_string().into());
+  if let Some(path) = cfg::MmcPath::default().path {
+    ui.set_mmc_path(path.to_string_lossy().to_string().into());
   }
 
   if let Some(path) = cfg::FTBPath::default().path {
@@ -56,7 +56,6 @@ fn main() -> Result<(), slint::PlatformError> {
 
     ui.set_packs(packs);
   }
-
 
   ui.run()
 }

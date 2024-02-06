@@ -1,3 +1,4 @@
+use std::fs::create_dir;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -9,7 +10,7 @@ pub struct FTBPath {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct PrismPath {
+pub struct MmcPath {
   pub path: Option<PathBuf>,
 }
 
@@ -26,7 +27,7 @@ impl Default for FTBPath {
   }
 }
 
-impl Default for PrismPath {
+impl Default for MmcPath {
   fn default() -> Self {
     let home = dirs::home_dir();
 
@@ -65,6 +66,29 @@ impl FTBPath {
   }
 }
 
+impl MmcPath {
+  pub fn new(path: &str) -> Self {
+    Self {
+      path: Some(PathBuf::from(path)).filter(|path| path.exists()),
+    }
+  }
+
+  pub fn create_instance(&self, instance: FTBInstance) {
+    let Some(path) = self.path.as_ref().filter(|path| path.exists()) else {
+      return;
+    };
+
+    let path = path.join(instance.name.as_str());
+
+    let Ok(_) = create_dir(&path) else {
+      return;
+    };
+
+    let path = path.join("mmc-pack.json");
+
+  }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FTBInstance {
   pub uuid: String,
@@ -78,6 +102,6 @@ pub struct FTBInstance {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-  pub prism: PrismPath,
+  pub mmc: MmcPath,
   pub ftb: FTBPath,
 }

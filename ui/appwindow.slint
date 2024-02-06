@@ -56,7 +56,7 @@ export component AppWindow inherits Window {
     in-out property <string> selected <=> packs.current-value;
     in-out property <bool> linked: false;
 
-    in-out property <string> prism-path <=> prism.path;
+    in-out property <string> mmc-path <=> mmc.path;
     in-out property <string> ftb-path <=> ftb.path;
 
     callback load-packs(string) -> [string];
@@ -72,7 +72,7 @@ export component AppWindow inherits Window {
         padding-left: 1.5rem;
         padding-right: 1.5rem;
 
-        prism := PathSelector {
+        mmc := PathSelector {
             display: "Prism/MultiMC";
         }
 
