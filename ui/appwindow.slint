@@ -60,6 +60,7 @@ export component AppWindow inherits Window {
     in-out property <string> ftb-path <=> ftb.path;
 
     callback load-packs(string) -> [string];
+    callback accepted <=> button.clicked;
 
     min-width: 48rem;
     min-height: 12rem;
@@ -89,12 +90,9 @@ export component AppWindow inherits Window {
 
             }
 
-            Button {
+            button := Button {
                 text: linked ? "Unlink" : "Link";
                 primary: true;
-                clicked => {
-
-                }
             }
         }
     }

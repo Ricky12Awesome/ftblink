@@ -37,10 +37,20 @@ fn main() -> Result<(), slint::PlatformError> {
     let instances = ftb.load_instances();
     let display = instances
       .iter()
-      .map(|instance| instance.name.as_str().into())
+      .map(|instance| format!("{} [{}]", instance.name, instance.uuid).into())
       .collect::<Vec<slint::SharedString>>();
 
     display.as_slice().into()
+  });
+
+  ui.on_accepted({
+    let ui_weak = ui.as_weak();
+
+    move || {
+      let ui = ui_weak.unwrap();
+
+
+    }
   });
 
   if let Some(path) = cfg::MmcPath::default().path {
