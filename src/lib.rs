@@ -1,8 +1,8 @@
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 
-use serde::{Deserialize, Deserializer, Serialize};
 use serde::de::{Error, Visitor};
+use serde::{Deserialize, Deserializer, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -32,8 +32,11 @@ impl Default for MmcPath {
   fn default() -> Self {
     let home = dirs::home_dir();
 
-    #[cfg(target_os = "linux")]
+    #[cfg(unix)]
     let path = home.map(|home| home.join(".local/share/PrismLauncher/"));
+
+    #[cfg(windows)]
+    let path = home.map(|home| home.join(r"AppData\Roaming\PrismLauncher"));
 
     Self {
       path: path.filter(|path| path.exists()),
@@ -45,8 +48,11 @@ impl Default for FTBPath {
   fn default() -> Self {
     let home = dirs::home_dir();
 
-    #[cfg(target_os = "linux")]
+    #[cfg(unix)]
     let path = home.map(|home| home.join(".ftba/instances/"));
+
+    #[cfg(windows)]
+    let path = home.map(|home| home.join(r"AppData\Local\.ftba\instances\"));
 
     Self {
       path: path.filter(|path| path.exists()),
@@ -329,7 +335,9 @@ pub fn remove_mmc_instance(
   let ftb_instance_path = ftb_path_v.join(instance.uuid.as_str());
 
   if !is_ftb_instance_linked(mmc_path, ftb_path, instance) {
-    return Err(anyhow::format_err!("'{ftb_instance_path:?}' does not link to '{mmc_minecraft_path:?}'"));
+    return Err(anyhow::format_err!(
+      "'{ftb_instance_path:?}' does not link to '{mmc_minecraft_path:?}'"
+    ));
   }
 
   symlink::remove_symlink_dir(mmc_minecraft_path)?;
@@ -379,7 +387,6 @@ pub fn create_mmc_instance(
 
   let mmc_path = mmc_instance_path.join(".minecraft");
 
-  // std::fs::create_dir(mmc_minecraft)?;
   symlink::symlink_dir(ftb_instance_path, mmc_path)?;
 
   Ok(())
