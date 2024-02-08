@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
