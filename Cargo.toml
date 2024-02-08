@@ -4,11 +4,18 @@ version = "0.1.0"
 authors = ["Ricky12Awesome <29931568+Ricky12Awesome@users.noreply.github.com>"]
 edition = "2021"
 build = "build.rs"
+description = "link ftb instances to prism or multimc"
+
+# https://github.com/burtonageo/cargo-bundle?tab=readme-ov-file#general-settings
+[package.metadata.bundle]
+name = "FTB Link"
+identifier = "io.github.ricky12awesome.ftblink"
+category = "Utility"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-slint = { version = "1.4", features = ["backend-qt"] }
+slint = "1.4"
 
 dirs = "5.0"
 confy = "0.6"
