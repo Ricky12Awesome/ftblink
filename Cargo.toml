@@ -1,7 +1,7 @@
 [package]
 name = "ftblink"
-version = "0.1.0"
-authors = ["Ricky12Awesome <29931568+Ricky12Awesome@users.noreply.github.com>"]
+version = "0.0.0"
+authors = ["Ricky12Awesome"]
 edition = "2021"
 build = "build.rs"
 description = "link ftb instances to prism or multimc"
