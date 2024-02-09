@@ -1,8 +1,25 @@
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 
-use serde::de::{Error, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
+
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+  #[error("Io Error: {0}")]
+  Io(#[from] std::io::Error),
+  #[error("Serde Error: {0}")]
+  Serde(#[from] serde_json::Error),
+  #[error("Invalid mmc path: {0:?}")]
+  InvalidMmcPath(Option<PathBuf>),
+  #[error("Invalid ftb path: {0:?}")]
+  InvalidFtbPath(Option<PathBuf>),
+  #[error("Could not find mmc config")]
+  MmcConfigNotFound,
+  #[error("{0:?} does not link to {1:?}")]
+  InvalidLink(PathBuf, PathBuf)
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -118,7 +135,7 @@ pub enum ModLoader {
 #[derive(Debug)]
 pub struct ModLoaderVisitor;
 
-impl Visitor<'_> for ModLoaderVisitor {
+impl serde::de::Visitor<'_> for ModLoaderVisitor {
   type Value = ModLoader;
 
   fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
@@ -127,7 +144,7 @@ impl Visitor<'_> for ModLoaderVisitor {
 
   fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
   where
-    E: Error,
+    E: serde::de::Error,
   {
     match () {
       // Format: fabric-loader-{mc-version}-{fabric-version}
@@ -232,10 +249,10 @@ struct MmcPaths {
   mmc_icons_path: PathBuf,
 }
 
-fn parse_mmc_path(mmc_path: &MmcPath) -> anyhow::Result<MmcPaths> {
+fn parse_mmc_path(mmc_path: &MmcPath) -> Result<MmcPaths> {
   let mmc_path = mmc_path
     .get_validated_path()
-    .ok_or_else(|| anyhow::format_err!("invalid mmc path '{:?}'", mmc_path.get_validated_path()))?;
+    .ok_or_else(|| Error::InvalidMmcPath(mmc_path.get_validated_path()))?;
 
   let cfg = mmc_path.join("prismlauncher.cfg");
 
@@ -246,7 +263,7 @@ fn parse_mmc_path(mmc_path: &MmcPath) -> anyhow::Result<MmcPaths> {
   };
 
   if !cfg.exists() {
-    return Err(anyhow::format_err!("mmc config not found"));
+    return Err(Error::MmcConfigNotFound)
   }
 
   let file = std::fs::read_to_string(cfg)?;
@@ -319,13 +336,13 @@ pub fn remove_mmc_instance(
   mmc_path: &MmcPath,
   ftb_path: &FTBPath,
   instance: &FTBInstance,
-) -> anyhow::Result<()> {
+) -> Result<()> {
   let MmcPaths {
     mmc_instance_path, ..
   } = parse_mmc_path(mmc_path)?;
 
   let Some(ftb_path_v) = ftb_path.get_validated_path() else {
-    return Err(anyhow::format_err!("failed to validate ftb path"));
+    return Err(Error::InvalidFtbPath(ftb_path.get_validated_path()));
   };
 
   let mmc_instance_path = mmc_instance_path.join(instance.uuid.as_str());
@@ -335,9 +352,7 @@ pub fn remove_mmc_instance(
   let ftb_instance_path = ftb_path_v.join(instance.uuid.as_str());
 
   if !is_ftb_instance_linked(mmc_path, ftb_path, instance) {
-    return Err(anyhow::format_err!(
-      "'{ftb_instance_path:?}' does not link to '{mmc_minecraft_path:?}'"
-    ));
+    return Err(Error::InvalidLink(ftb_instance_path, mmc_minecraft_path));
   }
 
   symlink::remove_symlink_dir(mmc_minecraft_path)?;
@@ -353,7 +368,7 @@ pub fn create_mmc_instance(
   mmc_path: &MmcPath,
   ftb_path: &FTBPath,
   instance: &FTBInstance,
-) -> anyhow::Result<()> {
+) -> Result<()> {
   let MmcPaths {
     mmc_instance_path,
     mmc_icons_path,
@@ -361,7 +376,7 @@ pub fn create_mmc_instance(
   } = parse_mmc_path(mmc_path)?;
 
   let Some(ftb_path) = ftb_path.get_validated_path() else {
-    return Err(anyhow::format_err!("failed to validate ftb path"));
+    return Err(Error::InvalidFtbPath(ftb_path.get_validated_path()));
   };
 
   let mmc_instance_path = mmc_instance_path.join(instance.uuid.as_str());

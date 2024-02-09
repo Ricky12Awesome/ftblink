@@ -61,6 +61,9 @@ export component AppWindow inherits Window {
     in-out property <string> mmc-path <=> mmc.path;
     in-out property <string> ftb-path <=> ftb.path;
 
+    in-out property <bool> pack-icon-exists: false;
+    in-out property <image> pack-icon;
+
     callback mmc-path-edited(string);
     callback ftb-path-edited(string);
 
@@ -68,6 +71,8 @@ export component AppWindow inherits Window {
 
     callback selected-change <=> packs.selected;
     callback accepted <=> button.clicked;
+
+    callback refresh <=> refresh.clicked;
 
     title: "FTB Link";
     min-width: 48rem;
@@ -106,8 +111,18 @@ export component AppWindow inherits Window {
         }
 
         HorizontalBox {
+            if (pack-icon-exists): Image {
+                source: root.pack-icon;
+                max-height: 2rem;
+                max-width: 2rem;
+            }
+
             packs := ComboBox {
 
+            }
+
+            refresh := Button {
+                text: "Refresh";
             }
 
             button := Button {

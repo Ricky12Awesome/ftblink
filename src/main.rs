@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 
-use slint::{SharedString, Weak};
+use slint::{Image, SharedString, Weak};
 
 use ftblink::{
   create_mmc_instance, is_ftb_instance_linked, load_ftb_instances, remove_mmc_instance,
@@ -19,7 +19,6 @@ slint::slint! { import { AppWindow, PathSelector, PathSelectorGlobal } from "ui/
 pub struct AppState {
   ftb_path: Rc<RefCell<FTBPath>>,
   mmc_path: Rc<RefCell<MmcPath>>,
-  selected: Rc<RefCell<Option<usize>>>,
   packs: Rc<RefCell<Vec<FTBInstance>>>,
   ui: Weak<AppWindow>,
 }
@@ -29,7 +28,6 @@ impl Debug for AppState {
     f.debug_struct("AppState")
       .field("ftb_path", &self.ftb_path)
       .field("mmc_path", &self.mmc_path)
-      .field("selected", &self.selected)
       .field("packs", &self.packs)
       .finish_non_exhaustive()
   }
@@ -40,6 +38,14 @@ fn display_packs(packs: &[FTBInstance]) -> Vec<SharedString> {
     .iter()
     .map(|instance| instance.display_name().into())
     .collect::<Vec<SharedString>>()
+}
+
+fn get_pack_icon(ftb_path: &FTBPath, ftb_instance: &FTBInstance) -> Option<Image> {
+  ftb_path
+    .get_validated_path()
+    .map(|ftb_path| ftb_path.join(&ftb_instance.uuid).join("folder.jpg"))
+    .filter(|path| path.exists())
+    .and_then(|path| Image::load_from_path(&path).ok())
 }
 
 impl AppState {
@@ -54,8 +60,6 @@ impl AppState {
     let ftb = self.ftb_path.borrow();
 
     let mut packs = self.packs.borrow_mut();
-    let mut selected = self.selected.borrow_mut();
-
     *packs = load_ftb_instances(&ftb);
 
     let ui = self.ui.unwrap();
@@ -72,16 +76,19 @@ impl AppState {
       let ftb_path = self.ftb_path.borrow();
       let is_linked = is_ftb_instance_linked(&mmc_path, &ftb_path, pack);
 
-      ui.set_linked(is_linked);
+      if let Some(pack_icon) = get_pack_icon(&ftb_path, pack) {
+        ui.set_pack_icon_exists(true);
+        ui.set_pack_icon(pack_icon);
+      }
 
-      *selected = Some(0);
+      ui.set_linked(is_linked);
     }
 
     if packs.is_empty() {
       ui.set_selected(-1);
       ui.set_selected_display("[none]".into());
       ui.set_linked(false);
-      *selected = None;
+      ui.set_pack_icon_exists(false);
     }
   }
 }
@@ -107,18 +114,18 @@ fn main() -> Result<(), slint::PlatformError> {
 
     move |_| {
       let ui = state.ui.unwrap();
-      let mut selected = state.selected.borrow_mut();
-
       let i = ui.get_selected();
-
-      *selected = Some(i as _);
-
       let packs = state.packs.borrow();
 
       if let Some(pack) = packs.get(i as usize) {
         let mmc_path = state.mmc_path.borrow();
         let ftb_path = state.ftb_path.borrow();
         let is_linked = is_ftb_instance_linked(&mmc_path, &ftb_path, pack);
+
+        if let Some(pack_icon) = get_pack_icon(&ftb_path, pack) {
+          ui.set_pack_icon_exists(true);
+          ui.set_pack_icon(pack_icon);
+        }
 
         ui.set_linked(is_linked);
       }
@@ -154,15 +161,16 @@ fn main() -> Result<(), slint::PlatformError> {
       let ui = state.ui.unwrap();
       let mmc_path = state.mmc_path.borrow();
       let ftb_path = state.ftb_path.borrow();
+      let selected = ui.get_selected();
 
-      let Some(selected) = *state.selected.borrow() else {
+      let packs = state.packs.borrow();
+
+      if selected == -1 || selected >= packs.len() as _ {
         ui.set_error("Nothing is selected".into());
         return;
       };
 
-      let packs = state.packs.borrow();
-
-      let Some(pack) = packs.get(selected) else {
+      let Some(pack) = packs.get(selected as usize) else {
         ui.set_error("Selected pack not found".into());
         return;
       };

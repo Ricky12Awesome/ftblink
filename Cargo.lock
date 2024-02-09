@@ -1468,6 +1468,7 @@ dependencies = [
  "slint",
  "slint-build",
  "symlink",
+ "thiserror",
 ]
 
 [[package]]
