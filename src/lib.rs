@@ -11,6 +11,8 @@ pub enum Error {
   Io(#[from] std::io::Error),
   #[error("Serde Error: {0}")]
   Serde(#[from] serde_json::Error),
+  #[error("Confy Error: {0}")]
+  Confy(#[from] confy::ConfyError),
   #[error("Invalid mmc path: {0:?}")]
   InvalidMmcPath(Option<PathBuf>),
   #[error("Invalid ftb path: {0:?}")]
@@ -18,19 +20,19 @@ pub enum Error {
   #[error("Could not find mmc config")]
   MmcConfigNotFound,
   #[error("{0:?} does not link to {1:?}")]
-  InvalidLink(PathBuf, PathBuf)
+  InvalidLink(PathBuf, PathBuf),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct MmcPath {
-  path: Option<PathBuf>,
+  pub path: Option<PathBuf>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct FTBPath {
-  path: Option<PathBuf>,
+  pub path: Option<PathBuf>,
 }
 
 impl Display for MmcPath {
@@ -109,10 +111,21 @@ fn validate_ftb_path(path: Option<PathBuf>) -> Option<PathBuf> {
   path.filter(|path| path.exists())
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-  pub mmc: MmcPath,
-  pub ftb: FTBPath,
+  pub mmc_path: MmcPath,
+  pub ftb_path: FTBPath,
+}
+
+impl Config {
+  pub fn load() -> Result<Config> {
+    confy::load(env!("CARGO_PKG_NAME"), Some("config")).map_err(Error::Confy)
+  }
+
+  pub fn save(&self) -> Result<()> {
+    confy::store(env!("CARGO_PKG_NAME"), Some("config"), self).map_err(Error::Confy)
+  }
+
 }
 
 #[derive(Debug, Deserialize)]
@@ -263,7 +276,7 @@ fn parse_mmc_path(mmc_path: &MmcPath) -> Result<MmcPaths> {
   };
 
   if !cfg.exists() {
-    return Err(Error::MmcConfigNotFound)
+    return Err(Error::MmcConfigNotFound);
   }
 
   let file = std::fs::read_to_string(cfg)?;

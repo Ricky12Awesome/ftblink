@@ -73,6 +73,7 @@ export component AppWindow inherits Window {
     callback accepted <=> button.clicked;
 
     callback refresh <=> refresh.clicked;
+    callback save <=> save.clicked;
 
     title: "FTB Link";
     min-width: 48rem;
@@ -119,6 +120,9 @@ export component AppWindow inherits Window {
 
             packs := ComboBox {
 
+            }
+            save := Button {
+                text: "Save";
             }
 
             refresh := Button {

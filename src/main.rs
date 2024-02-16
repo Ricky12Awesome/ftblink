@@ -7,7 +7,7 @@ use std::rc::Rc;
 use slint::{Image, SharedString, Weak};
 
 use ftblink::{
-  create_mmc_instance, is_ftb_instance_linked, load_ftb_instances, remove_mmc_instance,
+  create_mmc_instance, is_ftb_instance_linked, load_ftb_instances, remove_mmc_instance, Config,
   FTBInstance, FTBPath, MmcPath,
 };
 
@@ -96,6 +96,17 @@ impl AppState {
 fn main() -> Result<(), slint::PlatformError> {
   let ui = AppWindow::new()?;
   let state = Rc::new(AppState::new(ui.as_weak()));
+  let config = Config::load();
+
+  if let Ok(Config { mmc_path, ftb_path }) = &config {
+    if mmc_path.path.is_some() {
+      *state.mmc_path.borrow_mut() = mmc_path.clone();
+    }
+
+    if ftb_path.path.is_some() {
+      *state.ftb_path.borrow_mut() = ftb_path.clone();
+    }
+  }
 
   setup_path_selectors(&ui);
 
@@ -108,6 +119,39 @@ fn main() -> Result<(), slint::PlatformError> {
   }
 
   state.load_packs();
+
+  ui.on_save({
+    let state = state.clone();
+
+    move || {
+      let ui = state.ui.unwrap();
+      let mmc_path = state.mmc_path.borrow().clone();
+      let ftb_path = state.ftb_path.borrow().clone();
+
+      match config.as_ref().cloned() {
+        Ok(mut config) => {
+          if mmc_path.path.is_some() {
+            config.mmc_path = mmc_path;
+          }
+
+          if ftb_path.path.is_some() {
+            config.ftb_path = ftb_path;
+          }
+
+          if let Err(err) = config.save() {
+            ui.set_error(err.to_string().into());
+          }
+        }
+        Err(_) => {
+          let config = Config { mmc_path, ftb_path };
+
+          if let Err(err) = config.save() {
+            ui.set_error(err.to_string().into());
+          }
+        }
+      }
+    }
+  });
 
   ui.on_selected_change({
     let state = state.clone();
